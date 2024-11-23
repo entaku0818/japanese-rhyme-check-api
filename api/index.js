@@ -182,14 +182,11 @@ app.post('/check-rhyme', authenticateUser, async (req, res) => {
 
   try {
     // ユーザー情報を取得
-    const userRecord = await admin.auth().getUser(userId);
     const result = await evaluateRhyme(text);
 
     // Firestoreに分析結果を保存
     const docRef = await db.collection('rhymeAnalysis').add({
       userId,
-      userName: userRecord.displayName || 'Anonymous',
-      userPhotoURL: userRecord.photoURL,
       text,
       analysis: result,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -198,8 +195,6 @@ app.post('/check-rhyme', authenticateUser, async (req, res) => {
     res.json({
       id: docRef.id,
       text,
-      userName: userRecord.displayName || 'Anonymous',
-      userPhotoURL: userRecord.photoURL,
       ...result
     });
   } catch (error) {
