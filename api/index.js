@@ -1,7 +1,16 @@
 require('dotenv').config();
 const express = require('express');
 const OpenAI = require('openai');
+const cors = require('cors');  // 追加
 const app = express();
+
+// CORSミドルウェアを追加
+app.use(cors({
+  origin: 'http://localhost:8080',  // フロントエンドのURL
+  methods: ['POST', 'GET', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: true
+}));
 
 app.use(express.json());
 
@@ -92,7 +101,6 @@ async function evaluateRhyme(text) {
     }
   }
 }
-
 
 // APIエンドポイント
 app.post('/check-rhyme', async (req, res) => {
