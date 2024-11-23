@@ -1,18 +1,49 @@
 require('dotenv').config();
 const express = require('express');
 const OpenAI = require('openai');
-const cors = require('cors');  // 追加
+const cors = require('cors');
+const admin = require('firebase-admin');
+
+// Firebase Admin SDKの初期化
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+  })
+});
+
+// Firestoreの初期化
+const db = admin.firestore();
+
 const app = express();
 
-// CORSミドルウェアを追加
 app.use(cors({
-  origin: 'http://localhost:8080',  // フロントエンドのURL
+  origin: 'http://localhost:8080',
   methods: ['POST', 'GET', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
 app.use(express.json());
+
+// 認証ミドルウェア
+const authenticateUser = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: '認証が必要です' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error('認証エラー:', error);
+    res.status(401).json({ error: '認証に失敗しました' });
+  }
+};
 
 if (!process.env.OPENAI_API_KEY) {
   console.error('Error: OPENAI_API_KEY is not set in environment variables');
@@ -43,20 +74,6 @@ async function evaluateRhyme(text) {
   ],
   "flowScore": （0から100の間の数値。文章の流れやリズムの良さ）,
   "improvement": （改善案。ない場合は空文字。50文字以内）
-}
-
-例えば、「空を見上げて 誰かを待ってて」というテキストなら：
-{
-  "rhymeScore": 85,
-  "rhymePatterns": [
-    {
-      "words": ["見上げて", "待ってて"],
-      "type": "語尾韻",
-      "description": "「て」で韻を踏んでいる"
-    }
-  ],
-  "flowScore": 90,
-  "improvement": ""
 }`;
 
   try {
@@ -102,9 +119,60 @@ async function evaluateRhyme(text) {
   }
 }
 
-// APIエンドポイント
-app.post('/check-rhyme', async (req, res) => {
+// 全体の履歴を取得するエンドポイント（認証不要）
+app.get('/rhyme-history', async (req, res) => {
+  try {
+    // ページネーションのためのパラメータ
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const startAfter = req.query.startAfter;
+
+    let query = db.collection('rhymeAnalysis')
+      .orderBy('createdAt', 'desc')
+      .limit(limit);
+
+    if (startAfter) {
+      const startAfterDoc = await db.collection('rhymeAnalysis').doc(startAfter).get();
+      if (startAfterDoc.exists) {
+        query = query.startAfter(startAfterDoc);
+      }
+    }
+
+    const snapshot = await query.get();
+    
+    const history = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      // ユーザー情報を取得（非同期処理は省略）
+      history.push({
+        id: doc.id,
+        text: data.text,
+        analysis: data.analysis,
+        createdAt: data.createdAt.toDate(),
+        userName: data.userName || 'Anonymous',
+        userPhotoURL: data.userPhotoURL || null
+      });
+    });
+
+    const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    
+    res.json({
+      items: history,
+      nextPageToken: lastDoc ? lastDoc.id : null,
+      hasMore: history.length === limit
+    });
+  } catch (error) {
+    console.error('Firestore Error:', error);
+    res.status(500).json({
+      error: '履歴の取得に失敗しました'
+    });
+  }
+});
+
+// 韻の分析と保存を行うエンドポイント（認証必要）
+app.post('/check-rhyme', authenticateUser, async (req, res) => {
   const { text } = req.body;
+  const userId = req.user.uid;
 
   if (!text) {
     return res.status(400).json({
@@ -113,8 +181,27 @@ app.post('/check-rhyme', async (req, res) => {
   }
 
   try {
+    // ユーザー情報を取得
+    const userRecord = await admin.auth().getUser(userId);
     const result = await evaluateRhyme(text);
-    res.json(result);
+
+    // Firestoreに分析結果を保存
+    const docRef = await db.collection('rhymeAnalysis').add({
+      userId,
+      userName: userRecord.displayName || 'Anonymous',
+      userPhotoURL: userRecord.photoURL,
+      text,
+      analysis: result,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.json({
+      id: docRef.id,
+      text,
+      userName: userRecord.displayName || 'Anonymous',
+      userPhotoURL: userRecord.photoURL,
+      ...result
+    });
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({
