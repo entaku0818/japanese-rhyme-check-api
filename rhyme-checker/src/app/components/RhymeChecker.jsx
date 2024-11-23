@@ -1,15 +1,50 @@
 "use client"
 
-import { useState } from 'react';
-import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+import { AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useAuth } from './AuthProvider';
+import { 
+  signInWithRedirect, 
+  GoogleAuthProvider, 
+  getAuth,
+  getRedirectResult 
+} from 'firebase/auth';
 
 const RhymeChecker = () => {
+  const { user, loading: authLoading } = useAuth();
   const [text, setText] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    // リダイレクト後の処理
+    const auth = getAuth();
+    getRedirectResult(auth).catch((error) => {
+      if (error.code !== 'auth/redirect-cancelled-by-user') {
+        setError('ログインエラー: ' + error.message);
+      }
+    });
+  }, []);
+
+
+  const handleLogin = async () => {
+    try {
+      const auth = getAuth();
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+      setError('ログインに失敗しました: ' + error.message);
+    }
+  };
 
   const checkRhyme = async () => {
     if (!text.trim()) {
@@ -17,19 +52,28 @@ const RhymeChecker = () => {
       return;
     }
 
+    if (!user) {
+      setError('分析するにはログインが必要です');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
+      const idToken = await user.getIdToken();
+      
       const response = await fetch('http://localhost:3000/check-rhyme', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({ text }),
       });
 
       if (!response.ok) {
-        throw new Error('API エラーが発生しました');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'API エラーが発生しました');
       }
 
       const data = await response.json();
@@ -40,6 +84,38 @@ const RhymeChecker = () => {
       setLoading(false);
     }
   };
+
+  if (!isClient || authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Loader2 className="animate-spin" size={24} />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold">韻判定チェッカーへようこそ</h2>
+              <p className="text-gray-600">
+                韻の分析を始めるにはログインしてください
+              </p>
+            </div>
+            <button
+              onClick={handleLogin}
+              className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-black rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <LogIn size={20} />
+              Googleでログイン
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4">
