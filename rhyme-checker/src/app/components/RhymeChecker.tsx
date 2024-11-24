@@ -1,8 +1,7 @@
 "use client"
 
-
 import { useState, useEffect } from 'react';
-import { AlertCircle, Loader2, LogIn } from 'lucide-react';
+import { AlertCircle, Loader2, LogIn, Share2, Check, Copy } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from './AuthProvider';
@@ -12,28 +11,58 @@ import {
   getAuth,
   getRedirectResult 
 } from 'firebase/auth';
+import { toast } from '@/hooks/use-toast';
 
-const RhymeChecker = () => {
+interface RhymePattern {
+  type: string;
+  words: string[];
+  description: string;
+}
+
+interface AnalysisResult {
+  rhymeScore: number;
+  flowScore: number;
+  rhymePatterns: RhymePattern[];
+  improvement?: string;
+}
+
+const RhymeChecker: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
-  const [text, setText] = useState('');
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [isClient, setIsClient] = useState(false);
+  const [text, setText] = useState<string>('');
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [isClient, setIsClient] = useState<boolean>(false);
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [isCopied, setIsCopied] = useState<boolean>(false);
 
   useEffect(() => {
     setIsClient(true);
     // リダイレクト後の処理
     const auth = getAuth();
-    getRedirectResult(auth).catch((error) => {
+    getRedirectResult(auth).catch((error: Error & { code?: string }) => {
       if (error.code !== 'auth/redirect-cancelled-by-user') {
         setError('ログインエラー: ' + error.message);
       }
     });
   }, []);
 
+  useEffect(() => {
+    if (result) {
+      const baseUrl = window.location.origin;
+      const ogpUrl = new URL(`${baseUrl}/api/og`);
+      
+      // OGP画像用のパラメータを設定
+      ogpUrl.searchParams.set('rhymeScore', result.rhymeScore.toString());
+      ogpUrl.searchParams.set('flowScore', result.flowScore.toString());
+      ogpUrl.searchParams.set('text', text);
+      ogpUrl.searchParams.set('patterns', encodeURIComponent(JSON.stringify(result.rhymePatterns)));
 
-  const handleLogin = async () => {
+      setShareUrl(ogpUrl.toString());
+    }
+  }, [result, text]);
+
+  const handleLogin = async (): Promise<void> => {
     try {
       const auth = getAuth();
       const provider = new GoogleAuthProvider();
@@ -42,11 +71,13 @@ const RhymeChecker = () => {
       });
       await signInWithRedirect(auth, provider);
     } catch (error) {
-      setError('ログインに失敗しました: ' + error.message);
+      if (error instanceof Error) {
+        setError('ログインに失敗しました: ' + error.message);
+      }
     }
   };
 
-  const checkRhyme = async () => {
+  const checkRhyme = async (): Promise<void> => {
     if (!text.trim()) {
       setError('テキストを入力してください');
       return;
@@ -76,12 +107,33 @@ const RhymeChecker = () => {
         throw new Error(errorData.error || 'API エラーが発生しました');
       }
 
-      const data = await response.json();
+      const data: AnalysisResult = await response.json();
       setResult(data);
     } catch (err) {
-      setError(err.message);
+      if (err instanceof Error) {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShare = async (): Promise<void> => {
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setIsCopied(true);
+      toast({
+        description: "URLをクリップボードにコピーしました",
+      });
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error('共有に失敗しました:', error);
+      toast({
+        variant: "destructive",
+        description: "コピーに失敗しました",
+      });
     }
   };
 
@@ -185,6 +237,15 @@ const RhymeChecker = () => {
                 </div>
               </div>
             )}
+            <div className="flex justify-end mt-4">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  {isCopied ? <Check size={18} /> : <Copy size={18} />}
+                  {isCopied ? 'コピーしました' : 'URLをコピー'}
+                </button>
+              </div>
           </CardContent>
         </Card>
       )}
