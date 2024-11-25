@@ -114,7 +114,7 @@ async function evaluateRhyme(text) {
     } else if (error.code === 'rate_limit_exceeded') {
       throw new Error('APIリクエストが多すぎます。しばらく待ってから再試行してください。');
     } else {
-      throw new Error('分析中にエラーが発生しました: ' + error.message);
+      throw new Error('分析中にエラーが発生しました: ' + error.code + ":" + error.message);
     }
   }
 }

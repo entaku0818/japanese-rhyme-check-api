@@ -7,8 +7,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "node test/testApi.js",
-    "test:prod": "node test/testApi.js https://api-1021515738323.asia-northeast1.run.app"
-
+    "test:prod": "node test/testApi.js https://api-e4feui4cvq-an.a.run.app"
   },
   "dependencies": {
     "cors": "^2.8.5",
