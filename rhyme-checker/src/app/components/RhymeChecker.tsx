@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, Loader2, LogIn, Check, Copy } from 'lucide-react';
+import { AlertCircle, Loader2, LogIn, Check, Copy, LogOut } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from './AuthProvider';
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 
 import { toast } from '@/hooks/use-toast';
 import { auth } from '../firebase';
@@ -58,7 +58,6 @@ const RhymeChecker: React.FC = () => {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account',
-        cookie_policy: 'single_host_origin',
       });
       
       const result = await signInWithPopup(auth, provider);
@@ -73,6 +72,20 @@ const RhymeChecker: React.FC = () => {
         variant: "destructive",
         title: "エラー",
         description: errorMessage,
+      });
+    }
+  };
+
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await signOut(auth);
+      toast({
+        description: "ログアウトしました",
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        description: "ログアウトに失敗しました",
       });
     }
   };
@@ -249,6 +262,15 @@ const RhymeChecker: React.FC = () => {
           </CardContent>
         </Card>
       )}
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          <LogOut size={18} />
+          ログアウト
+        </button>
+      </div>
     </div>
   );
 };
