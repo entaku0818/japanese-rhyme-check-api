@@ -92,29 +92,6 @@ export async function GET(request: NextRequest) {
       }
     )
   } catch (e) {
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            backgroundColor: '#1a1a1a',
-            height: '100%',
-            width: '100%',
-            padding: '40px',
-            display: 'flex',
-            flexDirection: 'column',
-            color: 'white',
-          }}
-        >
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#E91E63' }}>
-            エラーが発生しました
-          </div>
-          <div style={{ fontSize: '24px', color: '#888' }}>{e.message}</div>
-        </div>
-      ),
-      {
-        width: 1200,
-        height: 630,
-      }
-    )
+
   }
 }
