@@ -5,7 +5,7 @@ import { AnalysisResult } from '@/app/types';
 
 interface UseRhymeAnalysisProps {
     apiUrl: string;
-  }
+}
 
 export const useRhymeAnalysis = (user: User | null, { apiUrl }: UseRhymeAnalysisProps) => {
     const [text, setText] = useState<string>('');
