@@ -5,13 +5,10 @@ import { AlertCircle, Loader2, LogIn, Share2, Check, Copy } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from './AuthProvider';
-import { 
-  signInWithRedirect, 
-  GoogleAuthProvider, 
-  getAuth,
-  getRedirectResult 
-} from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+
 import { toast } from '@/hooks/use-toast';
+import { auth } from '../firebase';
 
 interface RhymePattern {
   type: string;
@@ -35,16 +32,10 @@ const RhymeChecker: React.FC = () => {
   const [isClient, setIsClient] = useState<boolean>(false);
   const [shareUrl, setShareUrl] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  
 
   useEffect(() => {
     setIsClient(true);
-    // リダイレクト後の処理
-    const auth = getAuth();
-    getRedirectResult(auth).catch((error: Error & { code?: string }) => {
-      if (error.code !== 'auth/redirect-cancelled-by-user') {
-        setError('ログインエラー: ' + error.message);
-      }
-    });
   }, []);
 
   useEffect(() => {
@@ -64,16 +55,54 @@ const RhymeChecker: React.FC = () => {
 
   const handleLogin = async (): Promise<void> => {
     try {
-      const auth = getAuth();
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
-        prompt: 'select_account'
+        prompt: 'select_account',
+        // Cookieを許可
+        cookie_policy: 'single_host_origin',
       });
-      await signInWithRedirect(auth, provider);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError('ログインに失敗しました: ' + error.message);
+      
+      console.log('ログイン開始...');  // デバッグログ
+      const result = await signInWithPopup(auth, provider);
+      console.log('ログイン成功:', result.user.email);  // デバッグログ
+      
+    } catch (error: any) {  // エラー型を any に変更
+      console.error('ログインエラーの詳細:', error);  // 詳細なエラー情報
+      
+      // FirebaseAuthError の詳細情報を表示
+      if (error.code) {
+        console.error('エラーコード:', error.code);
       }
+      if (error.message) {
+        console.error('エラーメッセージ:', error.message);
+      }
+      
+      let errorMessage = 'ログインに失敗しました';
+      
+      // 具体的なエラーメッセージを設定
+      switch (error.code) {
+        case 'auth/popup-blocked':
+          errorMessage = 'ポップアップがブロックされました。ポップアップを許可してください。';
+          break;
+        case 'auth/popup-closed-by-user':
+          errorMessage = 'ログインがキャンセルされました。';
+          break;
+        case 'auth/unauthorized-domain':
+          errorMessage = '現在のドメインでの認証が許可されていません。';
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = 'Google認証が有効になっていません。';
+          break;
+        default:
+          errorMessage = `ログインエラー: ${error.message}`;
+      }
+      
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: errorMessage,
+      });
     }
   };
 
