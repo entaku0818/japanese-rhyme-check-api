@@ -6,68 +6,39 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from './AuthProvider';
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-
 import { toast } from '@/hooks/use-toast';
 import { auth } from '../firebase';
-
-interface RhymePattern {
-  type: string;
-  words: string[];
-  description: string;
-}
-
-interface AnalysisResult {
-  rhymeScore: number;
-  flowScore: number;
-  rhymePatterns: RhymePattern[];
-  improvement?: string;
-}
+import { useRhymeAnalysis, useShare } from '@/hooks';
 
 const RhymeChecker: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
-  const [text, setText] = useState<string>('');
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
   const [isClient, setIsClient] = useState<boolean>(false);
-  const [shareUrl, setShareUrl] = useState<string>('');
-  const [isCopied, setIsCopied] = useState<boolean>(false);
   
+  const {
+    text,
+    setText,
+    result,
+    loading,
+    error,
+    checkRhyme
+  } = useRhymeAnalysis(user);
+
+  const {
+    isCopied,
+    handleShare
+  } = useShare(result, text);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  useEffect(() => {
-    if (result) {
-      const baseUrl = window.location.origin;
-      const ogpUrl = new URL(`${baseUrl}/api/og`);
-      
-      // OGP画像用のパラメータを設定
-      ogpUrl.searchParams.set('rhymeScore', result.rhymeScore.toString());
-      ogpUrl.searchParams.set('flowScore', result.flowScore.toString());
-      ogpUrl.searchParams.set('text', text);
-      ogpUrl.searchParams.set('patterns', encodeURIComponent(JSON.stringify(result.rhymePatterns)));
-
-      setShareUrl(ogpUrl.toString());
-    }
-  }, [result, text]);
-
   const handleLogin = async (): Promise<void> => {
     try {
       const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account',
-      });
-      
-      const result = await signInWithPopup(auth, provider);
-      console.log('ログイン成功:', result.user);
-      
-    } catch {  // エラーパラメータを削除
-      // 固定のエラーメッセージ
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+    } catch {
       const errorMessage = 'ログインに失敗しました';
-      
-      setError(errorMessage);
       toast({
         variant: "destructive",
         title: "エラー",
@@ -79,73 +50,11 @@ const RhymeChecker: React.FC = () => {
   const handleLogout = async (): Promise<void> => {
     try {
       await signOut(auth);
-      toast({
-        description: "ログアウトしました",
-      });
+      toast({ description: "ログアウトしました" });
     } catch {
       toast({
         variant: "destructive",
-        description: "ログアウトに失敗しました",
-      });
-    }
-  };
-
-  const checkRhyme = async (): Promise<void> => {
-    if (!text.trim()) {
-      setError('テキストを入力してください');
-      return;
-    }
-
-    if (!user) {
-      setError('分析するにはログインが必要です');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const idToken = await user.getIdToken();
-      
-      const response = await fetch('http://localhost:3000/check-rhyme', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'API エラーが発生しました');
-      }
-
-      const data: AnalysisResult = await response.json();
-      setResult(data);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleShare = async (): Promise<void> => {
-    if (!shareUrl) return;
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setIsCopied(true);
-      toast({
-        description: "URLをクリップボードにコピーしました",
-      });
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (error) {
-      console.error('共有に失敗しました:', error);
-      toast({
-        variant: "destructive",
-        description: "コピーに失敗しました",
+        description: "ログアウトに失敗しました"
       });
     }
   };
@@ -165,9 +74,7 @@ const RhymeChecker: React.FC = () => {
           <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">韻判定チェッカーへようこそ</h2>
-              <p className="text-gray-600">
-                韻の分析を始めるにはログインしてください
-              </p>
+              <p className="text-gray-600">韻の分析を始めるにはログインしてください</p>
             </div>
             <button
               onClick={handleLogin}
@@ -202,9 +109,7 @@ const RhymeChecker: React.FC = () => {
           >
             {loading ? (
               <><Loader2 className="animate-spin mr-2" size={18} /> 分析中...</>
-            ) : (
-              '韻を分析する'
-            )}
+            ) : '韻を分析する'}
           </button>
         </CardContent>
       </Card>
@@ -251,14 +156,14 @@ const RhymeChecker: React.FC = () => {
               </div>
             )}
             <div className="flex justify-end mt-4">
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  {isCopied ? <Check size={18} /> : <Copy size={18} />}
-                  {isCopied ? 'コピーしました' : 'URLをコピー'}
-                </button>
-              </div>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                {isCopied ? <Check size={18} /> : <Copy size={18} />}
+                {isCopied ? 'コピーしました' : 'URLをコピー'}
+              </button>
+            </div>
           </CardContent>
         </Card>
       )}
