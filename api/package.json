@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node test/testApi.js"
+    "test": "node test/testApi.js",
+    "test:prod": "node test/testApi.js https://api-1021515738323.asia-northeast1.run.app"
+
   },
   "dependencies": {
     "cors": "^2.8.5",

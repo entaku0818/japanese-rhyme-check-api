@@ -1,9 +1,17 @@
-// test/testApi.js
 require('dotenv').config();
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 const { initializeApp } = require('firebase/app');
 const { getAuth, signInWithCustomToken } = require('firebase/auth');
+
+// APIのベースURLを環境変数から取得（デフォルトはローカル環境）
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
+
+// コマンドライン引数からURLを取得できるようにする
+const args = process.argv.slice(2);
+const apiUrl = args[0] || API_BASE_URL;
+
+console.log(`Using API URL: ${apiUrl}`);
 
 // Firebaseクライアント初期化
 const firebaseConfig = {
@@ -54,7 +62,7 @@ async function testApi(idToken) {
   try {
     // 1. 履歴取得APIのテスト
     console.log('\n1. GET /rhyme-history のテスト');
-    let response = await fetch('http://localhost:3000/rhyme-history');
+    let response = await fetch(`${apiUrl}/rhyme-history`);
     let data = await response.json();
     console.log('履歴取得結果:', JSON.stringify(data, null, 2));
 
@@ -64,7 +72,7 @@ async function testApi(idToken) {
       console.log(`\nテストケース: ${testCase.name}`);
       console.log(`テキスト: "${testCase.text}"`);
       
-      response = await fetch('http://localhost:3000/check-rhyme', {
+      response = await fetch(`${apiUrl}/check-rhyme`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,6 +97,7 @@ async function testApi(idToken) {
 async function runTests() {
   try {
     console.log('=== テスト実行開始 ===');
+    console.log(`APIエンドポイント: ${apiUrl}`);
     
     // 1. カスタムトークンを生成
     console.log('\nステップ1: カスタムトークンを生成');
