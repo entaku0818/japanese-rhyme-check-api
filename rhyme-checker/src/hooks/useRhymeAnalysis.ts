@@ -3,8 +3,12 @@ import { useState } from 'react';
 import { User } from 'firebase/auth';
 import { AnalysisResult } from '@/app/types';
 
-export const useRhymeAnalysis = (user: User | null) => {
-  const [text, setText] = useState<string>('');
+interface UseRhymeAnalysisProps {
+    apiUrl: string;
+  }
+
+export const useRhymeAnalysis = (user: User | null, { apiUrl }: UseRhymeAnalysisProps) => {
+    const [text, setText] = useState<string>('');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -24,7 +28,7 @@ export const useRhymeAnalysis = (user: User | null) => {
     setError('');
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch('http://localhost:3000/check-rhyme', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,7 +36,6 @@ export const useRhymeAnalysis = (user: User | null) => {
         },
         body: JSON.stringify({ text }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'API エラーが発生しました');

@@ -14,14 +14,9 @@ const RhymeChecker: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const [isClient, setIsClient] = useState<boolean>(false);
   
-  const {
-    text,
-    setText,
-    result,
-    loading,
-    error,
-    checkRhyme
-  } = useRhymeAnalysis(user);
+  const { text, setText, result, loading, error, checkRhyme } = useRhymeAnalysis(user, {
+    apiUrl: `${process.env.NEXT_PUBLIC_API_URL}/check-rhyme`  
+  });
 
   const {
     isCopied,
