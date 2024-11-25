@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, Loader2, LogIn, Share2, Check, Copy } from 'lucide-react';
+import { AlertCircle, Loader2, LogIn, Check, Copy } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from './AuthProvider';
@@ -58,44 +58,15 @@ const RhymeChecker: React.FC = () => {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account',
-        // Cookieを許可
         cookie_policy: 'single_host_origin',
       });
       
-      console.log('ログイン開始...');  // デバッグログ
       const result = await signInWithPopup(auth, provider);
-      console.log('ログイン成功:', result.user.email);  // デバッグログ
+      console.log('ログイン成功:', result.user);
       
-    } catch (error: any) {  // エラー型を any に変更
-      console.error('ログインエラーの詳細:', error);  // 詳細なエラー情報
-      
-      // FirebaseAuthError の詳細情報を表示
-      if (error.code) {
-        console.error('エラーコード:', error.code);
-      }
-      if (error.message) {
-        console.error('エラーメッセージ:', error.message);
-      }
-      
-      let errorMessage = 'ログインに失敗しました';
-      
-      // 具体的なエラーメッセージを設定
-      switch (error.code) {
-        case 'auth/popup-blocked':
-          errorMessage = 'ポップアップがブロックされました。ポップアップを許可してください。';
-          break;
-        case 'auth/popup-closed-by-user':
-          errorMessage = 'ログインがキャンセルされました。';
-          break;
-        case 'auth/unauthorized-domain':
-          errorMessage = '現在のドメインでの認証が許可されていません。';
-          break;
-        case 'auth/operation-not-allowed':
-          errorMessage = 'Google認証が有効になっていません。';
-          break;
-        default:
-          errorMessage = `ログインエラー: ${error.message}`;
-      }
+    } catch {  // エラーパラメータを削除
+      // 固定のエラーメッセージ
+      const errorMessage = 'ログインに失敗しました';
       
       setError(errorMessage);
       toast({

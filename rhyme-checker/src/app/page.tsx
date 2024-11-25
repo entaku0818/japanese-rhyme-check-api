@@ -1,4 +1,3 @@
-import Image from "next/image";
 import RhymeChecker from "./components/RhymeChecker"; // Adjust the import path as needed
 
 export default function Home() {

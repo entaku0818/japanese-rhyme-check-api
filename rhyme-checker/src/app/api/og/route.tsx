@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
     const rhymeScore = parseFloat(searchParams.get('rhymeScore') || '0')
     const flowScore = parseFloat(searchParams.get('flowScore') || '0')
     const text = searchParams.get('text') || ''
-    const patterns = searchParams.get('patterns')
 
     return new ImageResponse(
       (
@@ -91,7 +90,34 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     )
-  } catch (e) {
-
+  } catch (error) {
+    console.error('OG画像生成エラー:', error);
+    
+    // エラー時のフォールバック画像を返す
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            backgroundColor: '#1a1a1a',
+            height: '100%',
+            width: '100%',
+            padding: '40px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+          }}
+        >
+          <div style={{ fontSize: '32px', color: '#ff4444' }}>
+            画像の生成に失敗しました
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    )
   }
 }
