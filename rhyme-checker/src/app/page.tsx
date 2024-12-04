@@ -1,19 +1,75 @@
-import RhymeChecker from "./components/RhymeChecker"; // Adjust the import path as needed
-import { RhymeHistory } from "./components/RhymeHistory";
+"use client";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { User, Settings, LogOut } from 'lucide-react';
+import { useAuth } from './components/AuthProvider';
+import RhymeChecker from './components/RhymeChecker';
+import { RhymeHistory } from './components/RhymeHistory';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-       
+  const router = useRouter();
+  const { user } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-        {/* Integrating the RhymeChecker Component */}
+
+
+  return (
+    <div className="grid grid-rows-[auto_1fr_20px] min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      {/* Header with Profile */}
+      <header className="flex justify-end w-full">
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center space-x-2 focus:outline-none"
+          >
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <User className="w-6 h-6 text-gray-500" />
+              </div>
+            )}
+            <span className="hidden sm:block text-sm font-medium">
+              {user?.displayName || 'ゲスト'}
+            </span>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-lg shadow-xl border">
+              {user ? (
+                <>
+                  <button
+                     onClick={() => {}}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>プロフィール設定</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {}}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50"
+                >
+                  ログイン
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="flex flex-col gap-8 items-center sm:items-start">
         <RhymeChecker />
         <RhymeHistory />
-
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
 
+      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
       </footer>
     </div>
   );

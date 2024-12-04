@@ -205,6 +205,54 @@ app.post('/check-rhyme', authenticateUser, async (req, res) => {
   }
 });
 
+// ユーザープロフィール作成/更新エンドポイント
+app.post('/user/profile', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { displayName, photoURL } = req.body;
+
+    // 入力値の検証
+    if (displayName && (displayName.length < 2 || displayName.length > 30)) {
+      return res.status(400).json({ error: '表示名は2文字以上30文字以内で指定してください' });
+    }
+
+    if (photoURL && !photoURL.match(/^https?:\/\/.+/)) {
+      return res.status(400).json({ error: '画像URLが不正です' });
+    }
+
+    // ユーザープロフィールの更新
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    const userData = {
+      displayName: displayName || null,
+      photoURL: photoURL || null,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (!userDoc.exists) {
+      // 新規ユーザーの場合
+      userData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+      await userRef.set(userData);
+    } else {
+      // 既存ユーザーの場合
+      await userRef.update(userData);
+    }
+
+
+    res.json({
+      message: 'プロフィールを更新しました',
+      profile: userData
+    });
+
+  } catch (error) {
+    console.error('Profile Update Error:', error);
+    res.status(500).json({
+      error: 'プロフィールの更新に失敗しました'
+    });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
