@@ -173,6 +173,8 @@ app.get('/rhyme-history', async (req, res) => {
 app.post('/check-rhyme', authenticateUser, async (req, res) => {
   const { text } = req.body;
   const userId = req.user.uid;
+  const userName = req.user.name || 'Anonymous';
+  const userPhotoURL = req.user.picture || null;
 
   if (!text) {
     return res.status(400).json({
@@ -181,7 +183,6 @@ app.post('/check-rhyme', authenticateUser, async (req, res) => {
   }
 
   try {
-    // ユーザー情報を取得
     const result = await evaluateRhyme(text);
 
     // Firestoreに分析結果を保存
@@ -189,12 +190,16 @@ app.post('/check-rhyme', authenticateUser, async (req, res) => {
       userId,
       text,
       analysis: result,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      userName,
+      userPhotoURL
     });
 
     res.json({
       id: docRef.id,
       text,
+      userName,
+      userPhotoURL,
       ...result
     });
   } catch (error) {
