@@ -1,13 +1,12 @@
 "use client";
+
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { User, Settings, LogOut } from 'lucide-react';
+import { User, Settings } from 'lucide-react';
 import { useAuth } from './components/AuthProvider';
 import RhymeChecker from './components/RhymeChecker';
 import { RhymeHistory } from './components/RhymeHistory';
 
 export default function Home() {
-  const router = useRouter();
   const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
