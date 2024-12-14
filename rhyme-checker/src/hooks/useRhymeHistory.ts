@@ -1,6 +1,7 @@
-// hooks/useRhymeHistory.ts
 "use client"
 import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/app/components/AuthProvider';
 
 interface RhymeHistoryItem {
   id: string;
@@ -17,6 +18,8 @@ interface RhymeHistoryItem {
   createdAt: string;
   userName: string;
   userPhotoURL: string | null;
+  likeCount: number;
+  isLiked?: boolean;
 }
 
 interface RhymeHistoryResponse {
@@ -25,7 +28,13 @@ interface RhymeHistoryResponse {
   hasMore: boolean;
 }
 
+interface LikeResponse {
+  likeCount: number;
+  isLiked: boolean;
+}
+
 export const useRhymeHistory = () => {
+  const { user } = useAuth();
   const [history, setHistory] = useState<RhymeHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -47,13 +56,85 @@ export const useRhymeHistory = () => {
 
       const data: RhymeHistoryResponse = await response.json();
       
-      setHistory(prev => pageToken ? [...prev, ...data.items] : data.items);
+      // ユーザーがログインしている場合、各項目のいいね状態を取得
+      if (user) {
+        const itemsWithLikeStatus = await Promise.all(
+          data.items.map(async (item) => {
+            const likeStatus = await fetchLikeStatus(item.id);
+            return { ...item, isLiked: likeStatus.isLiked };
+          })
+        );
+        setHistory(prev => pageToken ? [...prev, ...itemsWithLikeStatus] : itemsWithLikeStatus);
+      } else {
+        setHistory(prev => pageToken ? [...prev, ...data.items] : data.items);
+      }
+      
       setNextPageToken(data.nextPageToken);
       setHasMore(data.hasMore);
     } catch (err) {
       setError(err instanceof Error ? err.message : '履歴の取得に失敗しました');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLikeStatus = async (analysisId: string): Promise<LikeResponse> => {
+    if (!user) return { likeCount: 0, isLiked: false };
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/rhyme-analysis/${analysisId}/likes`,
+        {
+          headers: {
+            Authorization: `Bearer ${await user.getIdToken()}`
+          }
+        }
+      );
+      if (!response.ok) throw new Error('いいね状態の取得に失敗しました');
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching like status:', err);
+      return { likeCount: 0, isLiked: false };
+    }
+  };
+
+  const toggleLike = async (analysisId: string) => {
+    if (!user) {
+      toast({
+        description: "いいねするにはログインが必要です",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/rhyme-analysis/${analysisId}/like`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${await user.getIdToken()}`
+          }
+        }
+      );
+
+      if (!response.ok) throw new Error('いいねの処理に失敗しました');
+
+      const data: LikeResponse = await response.json();
+      
+      // 履歴の状態を更新
+      setHistory(prev => prev.map(item => 
+        item.id === analysisId
+          ? { ...item, likeCount: data.likeCount, isLiked: data.isLiked }
+          : item
+      ));
+
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      toast({
+        description: "いいねの処理に失敗しました",
+        variant: "destructive"
+      });
     }
   };
 
@@ -65,7 +146,14 @@ export const useRhymeHistory = () => {
 
   useEffect(() => {
     fetchHistory();
-  }, []);
+  }, [user]); // userの変更を監視
 
-  return { history, loading, error, hasMore, loadMore };
+  return { 
+    history, 
+    loading, 
+    error, 
+    hasMore, 
+    loadMore,
+    toggleLike 
+  };
 };

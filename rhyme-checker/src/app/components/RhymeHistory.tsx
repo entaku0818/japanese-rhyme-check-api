@@ -2,11 +2,12 @@
 "use client"
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Heart, User } from 'lucide-react';
 import { useRhymeHistory } from '@/hooks/useRhymeHistory';
+import { cn } from '@/lib/utils';
 
 export const RhymeHistory: React.FC = () => {
-  const { history, loading, error, hasMore, loadMore } = useRhymeHistory();
+  const { history, loading, error, hasMore, loadMore, toggleLike } = useRhymeHistory();
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4">
@@ -22,12 +23,20 @@ export const RhymeHistory: React.FC = () => {
           {history.map((item) => (
             <div key={item.id} className="border rounded-lg p-4 space-y-2">
               <div className="flex items-center space-x-2">
-                {item.userPhotoURL && (
+                {item.userPhotoURL ? (
                   <img 
                     src={item.userPhotoURL} 
                     alt={item.userName} 
                     className="w-8 h-8 rounded-full"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/default-avatar.png';
+                    }}
                   />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <User className="w-4 h-4 text-gray-500" />
+                  </div>
                 )}
                 <div className="font-medium">{item.userName}</div>
                 <div className="text-sm text-gray-500">
@@ -35,9 +44,25 @@ export const RhymeHistory: React.FC = () => {
                 </div>
               </div>
               <p className="text-gray-700">{item.text}</p>
-              <div className="flex space-x-4">
-                <div>韻スコア: {item.analysis.rhymeScore}</div>
-                <div>フロースコア: {item.analysis.flowScore}</div>
+              <div className="flex items-center justify-between">
+                <div className="flex space-x-4">
+                  <div>韻スコア: {item.analysis.rhymeScore}</div>
+                  <div>フロースコア: {item.analysis.flowScore}</div>
+                </div>
+                <button
+                  onClick={() => toggleLike(item.id)}
+                  className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <Heart 
+                    className={cn(
+                      "w-4 h-4 transition-colors", 
+                      item.isLiked ? "fill-red-500 text-red-500" : "text-gray-500"
+                    )}
+                  />
+                  <span className="text-sm text-gray-700">
+                    {item.likeCount || 0}
+                  </span>
+                </button>
               </div>
             </div>
           ))}

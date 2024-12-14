@@ -37,7 +37,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// 認証ミドルウェア
 const authenticateUser = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -132,8 +131,6 @@ async function evaluateRhyme(text) {
 // 全体の履歴を取得するエンドポイント（認証不要）
 app.get('/rhyme-history', async (req, res) => {
   try {
-    // ページネーションのためのパラメータ
-    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const startAfter = req.query.startAfter;
 
@@ -153,14 +150,14 @@ app.get('/rhyme-history', async (req, res) => {
     const history = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-      // ユーザー情報を取得（非同期処理は省略）
       history.push({
         id: doc.id,
         text: data.text,
         analysis: data.analysis,
         createdAt: data.createdAt.toDate(),
         userName: data.userName || 'Anonymous',
-        userPhotoURL: data.userPhotoURL || null
+        userPhotoURL: data.userPhotoURL || null,
+        likeCount: data.likeCount || 0
       });
     });
 
@@ -195,14 +192,14 @@ app.post('/check-rhyme', authenticateUser, async (req, res) => {
   try {
     const result = await evaluateRhyme(text);
 
-    // Firestoreに分析結果を保存
     const docRef = await db.collection('rhymeAnalysis').add({
       userId,
       text,
       analysis: result,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       userName,
-      userPhotoURL
+      userPhotoURL,
+      likeCount: 0 
     });
 
     res.json({
@@ -210,6 +207,7 @@ app.post('/check-rhyme', authenticateUser, async (req, res) => {
       text,
       userName,
       userPhotoURL,
+      likeCount: 0, 
       ...result
     });
   } catch (error) {
@@ -265,6 +263,106 @@ app.post('/user/profile', authenticateUser, async (req, res) => {
     res.status(500).json({
       error: 'プロフィールの更新に失敗しました'
     });
+  }
+});
+
+
+const getLikeStatus = async (userId, analysisId) => {
+  const likeRef = db.collection('likes')
+    .where('userId', '==', userId)
+    .where('analysisId', '==', analysisId)
+    .limit(1);
+  
+  const snapshot = await likeRef.get();
+  return !snapshot.empty;
+};
+
+// いいね数を取得するエンドポイント
+app.get('/rhyme-analysis/:id/likes', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const likeCountRef = db.collection('rhymeAnalysis').doc(id);
+    const doc = await likeCountRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: '分析が見つかりません' });
+    }
+
+    const likeCount = doc.data().likeCount || 0;
+    
+    // ユーザーが認証されている場合、いいね状態も返す
+    let isLiked = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const idToken = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        isLiked = await getLikeStatus(decodedToken.uid, id);
+      } catch (error) {
+        console.error('認証エラー:', error);
+      }
+    }
+
+    res.json({
+      likeCount,
+      isLiked
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'いいね数の取得に失敗しました' });
+  }
+});
+
+// いいねを追加/削除するエンドポイント
+app.post('/rhyme-analysis/:id/like', authenticateUser, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.uid;
+
+  try {
+    const analysisRef = db.collection('rhymeAnalysis').doc(id);
+    const analysisDoc = await analysisRef.get();
+
+    if (!analysisDoc.exists) {
+      return res.status(404).json({ error: '分析が見つかりません' });
+    }
+
+    const batch = db.batch();
+    const likeRef = db.collection('likes').doc(`${userId}_${id}`);
+    const likeDoc = await likeRef.get();
+
+    if (likeDoc.exists) {
+      // いいねを削除
+      batch.delete(likeRef);
+      batch.update(analysisRef, {
+        likeCount: admin.firestore.FieldValue.increment(-1)
+      });
+    } else {
+      // いいねを追加
+      batch.set(likeRef, {
+        userId,
+        analysisId: id,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      batch.update(analysisRef, {
+        likeCount: admin.firestore.FieldValue.increment(1)
+      });
+    }
+
+    await batch.commit();
+
+    // 更新後の状態を取得
+    const updatedAnalysis = await analysisRef.get();
+    const likeCount = updatedAnalysis.data().likeCount || 0;
+    const isLiked = !likeDoc.exists;
+
+    res.json({
+      likeCount,
+      isLiked
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'いいねの処理に失敗しました' });
   }
 });
 
