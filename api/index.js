@@ -21,7 +21,7 @@ const db = admin.firestore();
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:8080',
+  origin: '*',
   methods: ['POST', 'GET', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
