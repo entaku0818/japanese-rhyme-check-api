@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, Loader2, LogIn, Check, Copy, LogOut } from 'lucide-react';
+import { AlertCircle, Loader2, LogIn, Check, Copy, LogOut, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from './AuthProvider';
@@ -19,6 +19,7 @@ const RhymeChecker: React.FC = () => {
   });
 
   const {
+    shareUrl,
     isCopied,
     handleShare
   } = useShare(result, text);
@@ -26,6 +27,11 @@ const RhymeChecker: React.FC = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleClear = () => {
+    setText('');
+    window.location.reload();
+  };
 
   const handleLogin = async (): Promise<void> => {
     try {
@@ -52,6 +58,14 @@ const RhymeChecker: React.FC = () => {
         description: "ログアウトに失敗しました"
       });
     }
+  };
+
+  const handleTwitterShare = () => {
+    if (!shareUrl) return;
+    
+    const shareText = `韻判定チェッカーで分析してみた！\n韻のスコア: ${result?.rhymeScore}/100\nフローのスコア: ${result?.flowScore}/100`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   if (!isClient || authLoading) {
@@ -90,23 +104,25 @@ const RhymeChecker: React.FC = () => {
         <CardHeader>
           <CardTitle>韻判定チェッカー</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="w-full h-32 p-2 border rounded-md"
-            placeholder="テキストを入力してください..."
-          />
-          <button
-            onClick={checkRhyme}
-            disabled={loading}
-            className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 disabled:bg-blue-300 flex items-center justify-center"
-          >
-            {loading ? (
-              <><Loader2 className="animate-spin mr-2" size={18} /> 分析中...</>
-            ) : '韻を分析する'}
-          </button>
-        </CardContent>
+        {!result && (
+          <CardContent className="space-y-4">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="w-full h-32 p-2 border rounded-md"
+              placeholder="テキストを入力してください..."
+            />
+            <button
+              onClick={checkRhyme}
+              disabled={loading}
+              className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 disabled:bg-blue-300 flex items-center justify-center"
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin mr-2" size={18} /> 分析中...</>
+              ) : '韻を分析する'}
+            </button>
+          </CardContent>
+        )}
       </Card>
 
       {error && (
@@ -157,6 +173,19 @@ const RhymeChecker: React.FC = () => {
               >
                 {isCopied ? <Check size={18} /> : <Copy size={18} />}
                 {isCopied ? 'コピーしました' : 'URLをコピー'}
+              </button>
+              <button
+              onClick={handleTwitterShare}
+              className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+            >
+              <X size={18} />
+              共有
+            </button>
+            <button
+                onClick={handleClear}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                終了
               </button>
             </div>
           </CardContent>
