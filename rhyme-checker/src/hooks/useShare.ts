@@ -1,29 +1,33 @@
-// hooks/useShare.ts
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { AnalysisResult } from '@/app/types';
 
-export const useShare = (result: AnalysisResult | null, text: string) => {
+interface ShareProps {
+  id: string | null;
+  text: string;
+}
+
+export const useShare = ({ id, text }: ShareProps) => {
   const [shareUrl, setShareUrl] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    if (result) {
+    if (id) {
       const baseUrl = window.location.origin;
       const ogpUrl = new URL(`${baseUrl}/api/og`);
-      ogpUrl.searchParams.set('rhymeScore', result.rhymeScore.toString());
-      ogpUrl.searchParams.set('flowScore', result.flowScore.toString());
-      ogpUrl.searchParams.set('text', text);
-      ogpUrl.searchParams.set('patterns', encodeURIComponent(JSON.stringify(result.rhymePatterns)));
+      ogpUrl.searchParams.set('id', id);
       setShareUrl(ogpUrl.toString());
     }
-  }, [result, text]);
+  }, [id]);
 
   const handleShare = async (): Promise<void> => {
     if (!shareUrl) return;
 
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      // シェアするテキストを作成
+      const shareText = `韻判定チェッカーで分析してみた！\n${text}\n`;
+      const fullShareText = `${shareText}${shareUrl}`;
+
+      await navigator.clipboard.writeText(fullShareText);
       setIsCopied(true);
       toast({
         description: "URLをクリップボードにコピーしました",
@@ -38,5 +42,21 @@ export const useShare = (result: AnalysisResult | null, text: string) => {
     }
   };
 
-  return { shareUrl, isCopied, handleShare };
+  const handleTwitterShare = async (): Promise<void> => {
+    if (!shareUrl) return;
+
+    const shareText = `韻判定チェッカーで分析してみた！\n${text}\n`;
+    const twitterUrl = new URL('https://twitter.com/intent/tweet');
+    twitterUrl.searchParams.set('text', shareText);
+    twitterUrl.searchParams.set('url', shareUrl);
+
+    window.open(twitterUrl.toString(), '_blank', 'noopener,noreferrer');
+  };
+
+  return { 
+    shareUrl, 
+    isCopied, 
+    handleShare,
+    handleTwitterShare 
+  };
 };

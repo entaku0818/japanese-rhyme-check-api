@@ -1,16 +1,39 @@
 // src/app/api/og/route.tsx
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
-import React from 'react'
 
 export const runtime = 'edge'
+
+interface RhymeAnalysis {
+  text: string;
+  analysis: {
+    rhymeScore: number;
+    flowScore: number;
+  };
+  userName: string;
+  createdAt: string;
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const rhymeScore = parseFloat(searchParams.get('rhymeScore') || '0')
-    const flowScore = parseFloat(searchParams.get('flowScore') || '0')
-    const text = searchParams.get('text') || ''
+    const id = searchParams.get('id')
+
+    if (!id) {
+      throw new Error('ID is required')
+    }
+
+    // APIからデータを取得
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/rhyme-analysis/${id}`,
+      { next: { revalidate: 60 } } 
+    );
+
+    if (!response.ok) {
+      throw new Error(response.status === 404 ? 'Document not found' : 'Failed to fetch data');
+    }
+
+    const data: RhymeAnalysis = await response.json();
 
     return new ImageResponse(
       (
@@ -25,6 +48,7 @@ export async function GET(request: NextRequest) {
             color: 'white',
           }}
         >
+
           {/* スコア表示 */}
           <div
             style={{
@@ -46,7 +70,7 @@ export async function GET(request: NextRequest) {
             >
               <div style={{ fontSize: '24px', color: '#888' }}>韻の評価</div>
               <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#4CAF50' }}>
-                {rhymeScore.toFixed(1)}
+                {data.analysis.rhymeScore.toFixed(1)}
               </div>
             </div>
             <div
@@ -62,7 +86,7 @@ export async function GET(request: NextRequest) {
             >
               <div style={{ fontSize: '24px', color: '#888' }}>フロウの評価</div>
               <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#2196F3' }}>
-                {flowScore.toFixed(1)}
+                {data.analysis.flowScore.toFixed(1)}
               </div>
             </div>
           </div>
@@ -80,9 +104,21 @@ export async function GET(request: NextRequest) {
               wordBreak: 'break-all',
             }}
           >
-            {text}
+            {data.text}
           </div>
 
+          {/* フッター */}
+          <div
+            style={{
+              fontSize: '20px',
+              color: '#888',
+              textAlign: 'right',
+              marginTop: '20px',
+              paddingRight: '20px'
+            }}
+          >
+            韻を踏んだらいい韻じゃない？
+          </div>
         </div>
       ),
       {
@@ -93,7 +129,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('OG画像生成エラー:', error);
     
-    // エラー時のフォールバック画像を返す
     return new ImageResponse(
       (
         <div

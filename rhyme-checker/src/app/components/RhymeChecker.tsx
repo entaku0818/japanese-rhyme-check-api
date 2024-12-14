@@ -21,8 +21,12 @@ const RhymeChecker: React.FC = () => {
   const {
     shareUrl,
     isCopied,
-    handleShare
-  } = useShare(result, text);
+    handleShare,
+    handleTwitterShare
+  } = useShare({
+    id: result?.id ?? null,
+    text: text
+  });
 
   useEffect(() => {
     setIsClient(true);
@@ -58,14 +62,6 @@ const RhymeChecker: React.FC = () => {
         description: "ログアウトに失敗しました"
       });
     }
-  };
-
-  const handleTwitterShare = () => {
-    if (!shareUrl) return;
-    
-    const shareText = `韻判定チェッカーで分析してみた！\n韻のスコア: ${result?.rhymeScore}/100\nフローのスコア: ${result?.flowScore}/100`;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   if (!isClient || authLoading) {
@@ -166,7 +162,7 @@ const RhymeChecker: React.FC = () => {
                 </div>
               </div>
             )}
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={handleShare}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
@@ -175,13 +171,13 @@ const RhymeChecker: React.FC = () => {
                 {isCopied ? 'コピーしました' : 'URLをコピー'}
               </button>
               <button
-              onClick={handleTwitterShare}
-              className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
-            >
-              <X size={18} />
-              共有
-            </button>
-            <button
+                onClick={handleTwitterShare}
+                className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+              >
+                <X size={18} />
+                共有
+              </button>
+              <button
                 onClick={handleClear}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
               >

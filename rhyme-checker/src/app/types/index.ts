@@ -6,6 +6,7 @@ export interface RhymePattern {
   }
   
   export interface AnalysisResult {
+    id: string;
     rhymeScore: number;
     flowScore: number;
     rhymePatterns: RhymePattern[];
