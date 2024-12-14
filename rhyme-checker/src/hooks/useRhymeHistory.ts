@@ -3,7 +3,13 @@ import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/app/components/AuthProvider';
 
-type SortOption = 'newest' | 'oldest' | 'likes';
+export const SORT_OPTIONS = {
+  newest: '新しい順',
+  oldest: '古い順',
+  likes: '人気順'
+} as const;
+
+export type SortOption = keyof typeof SORT_OPTIONS;
 
 interface RhymeHistoryItem {
   id: string;

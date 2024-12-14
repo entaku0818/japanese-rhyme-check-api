@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2, Heart, User, Clock, ThumbsUp } from 'lucide-react';
-import { useRhymeHistory } from '@/hooks/useRhymeHistory';
+import { SORT_OPTIONS, SortOption, useRhymeHistory } from '@/hooks/useRhymeHistory';
 import { cn } from '@/lib/utils';
 
 export const RhymeHistory: React.FC = () => {
@@ -24,42 +24,20 @@ export const RhymeHistory: React.FC = () => {
           <div className="flex justify-between items-center">
             <CardTitle>分析履歴</CardTitle>
             <div className="flex gap-2">
+            {Object.entries(SORT_OPTIONS).map(([value, label]) => (
               <button
-                onClick={() => changeSort('newest')}
+                key={value}
+                onClick={() => changeSort(value as SortOption)}
                 className={cn(
                   "flex items-center gap-1 px-3 py-1.5 rounded text-sm transition-colors",
-                  sortBy === 'newest' 
-                    ? "bg-blue-500 text-white" 
+                  sortBy === value
+                    ? "bg-blue-500 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 )}
               >
-                <Clock size={14} />
-                新しい順
+                {label}
               </button>
-              <button
-                onClick={() => changeSort('oldest')}
-                className={cn(
-                  "flex items-center gap-1 px-3 py-1.5 rounded text-sm transition-colors",
-                  sortBy === 'oldest' 
-                    ? "bg-blue-500 text-white" 
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                )}
-              >
-                <Clock size={14} />
-                古い順
-              </button>
-              <button
-                onClick={() => changeSort('likes')}
-                className={cn(
-                  "flex items-center gap-1 px-3 py-1.5 rounded text-sm transition-colors",
-                  sortBy === 'likes' 
-                    ? "bg-blue-500 text-white" 
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                )}
-              >
-                <ThumbsUp size={14} />
-                人気順
-              </button>
+            ))}
             </div>
           </div>
         </CardHeader>
