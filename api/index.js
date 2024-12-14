@@ -366,6 +366,48 @@ app.post('/rhyme-analysis/:id/like', authenticateUser, async (req, res) => {
   }
 });
 
+app.get('/rhyme-analysis/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const docRef = db.collection('rhymeAnalysis').doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: '分析が見つかりませんでした' });
+    }
+
+    const data = doc.data();
+    
+    // ユーザーが認証されている場合、いいね状態も取得
+    let isLiked = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const idToken = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        isLiked = await getLikeStatus(decodedToken.uid, id);
+      } catch (error) {
+        console.error('認証エラー:', error);
+      }
+    }
+
+    res.json({
+      id: doc.id,
+      text: data.text,
+      analysis: data.analysis,
+      createdAt: data.createdAt.toDate(),
+      userName: data.userName || 'Anonymous',
+      userPhotoURL: data.userPhotoURL || null,
+      likeCount: data.likeCount || 0,
+      isLiked
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: '分析の取得に失敗しました' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
