@@ -117,7 +117,20 @@ export async function GET(request: NextRequest) {
               paddingRight: '20px'
             }}
           >
-            韻を踏んだらいい韻じゃない？
+            <a 
+              href="https://rhyme-check.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                textDecoration: 'none',
+                color: 'inherit',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.color = '#666'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#888'}
+            >
+              韻を踏んだらいい韻じゃない？
+            </a>
           </div>
         </div>
       ),
