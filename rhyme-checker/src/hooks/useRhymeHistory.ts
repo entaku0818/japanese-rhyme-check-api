@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/app/components/AuthProvider';
 
+type SortOption = 'newest' | 'oldest' | 'likes';
+
 interface RhymeHistoryItem {
   id: string;
   text: string;
@@ -40,13 +42,15 @@ export const useRhymeHistory = () => {
   const [error, setError] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-  const fetchHistory = async (pageToken?: string) => {
+  const fetchHistory = async (pageToken?: string, sort: SortOption = sortBy) => {
     setLoading(true);
     setError('');
     
     try {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/rhyme-history`);
+      url.searchParams.set('sort', sort);
       if (pageToken) {
         url.searchParams.set('startAfter', pageToken);
       }
@@ -75,6 +79,14 @@ export const useRhymeHistory = () => {
       setError(err instanceof Error ? err.message : '履歴の取得に失敗しました');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const changeSort = async (newSort: SortOption) => {
+    if (newSort !== sortBy) {
+      setSortBy(newSort);
+      setNextPageToken(null);
+      await fetchHistory(undefined, newSort);
     }
   };
 
@@ -146,7 +158,7 @@ export const useRhymeHistory = () => {
 
   useEffect(() => {
     fetchHistory();
-  }, [user]); // userの変更を監視
+  }, [user]); 
 
   return { 
     history, 
@@ -154,6 +166,8 @@ export const useRhymeHistory = () => {
     error, 
     hasMore, 
     loadMore,
-    toggleLike 
+    toggleLike,
+    sortBy,
+    changeSort
   };
 };

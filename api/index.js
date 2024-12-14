@@ -133,11 +133,28 @@ app.get('/rhyme-history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const startAfter = req.query.startAfter;
+    const sortBy = req.query.sort || 'newest'; // デフォルトは最新順
 
-    let query = db.collection('rhymeAnalysis')
-      .orderBy('createdAt', 'desc')
-      .limit(limit);
+    // ソート条件の設定
+    let query = db.collection('rhymeAnalysis');
+    
+    switch (sortBy) {
+      case 'oldest':
+        query = query.orderBy('createdAt', 'asc');
+        break;
+      case 'likes':
+        query = query.orderBy('likeCount', 'desc')
+                    .orderBy('createdAt', 'desc'); // 同じいいね数の場合は新しい順
+        break;
+      case 'newest':
+      default:
+        query = query.orderBy('createdAt', 'desc');
+        break;
+    }
 
+    query = query.limit(limit);
+
+    // startAfterの処理
     if (startAfter) {
       const startAfterDoc = await db.collection('rhymeAnalysis').doc(startAfter).get();
       if (startAfterDoc.exists) {
@@ -166,7 +183,8 @@ app.get('/rhyme-history', async (req, res) => {
     res.json({
       items: history,
       nextPageToken: lastDoc ? lastDoc.id : null,
-      hasMore: history.length === limit
+      hasMore: history.length === limit,
+      sortBy // 現在のソート順も返す
     });
   } catch (error) {
     console.error('Firestore Error:', error);
