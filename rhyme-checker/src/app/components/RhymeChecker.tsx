@@ -19,7 +19,6 @@ const RhymeChecker: React.FC = () => {
   });
 
   const {
-    shareUrl,
     isCopied,
     handleShare,
     handleTwitterShare
