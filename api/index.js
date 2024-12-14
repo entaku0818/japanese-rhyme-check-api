@@ -3,6 +3,8 @@ const express = require('express');
 const OpenAI = require('openai');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const { version } = require('./package.json');
+
 
 // Firebase Admin SDKの初期化
 admin.initializeApp({
@@ -26,6 +28,14 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json({
+    version,
+    timestamp: new Date().toISOString(),
+    status: 'ok'
+  });
+});
 
 // 認証ミドルウェア
 const authenticateUser = async (req, res, next) => {
