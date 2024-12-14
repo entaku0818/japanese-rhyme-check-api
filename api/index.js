@@ -135,7 +135,6 @@ app.get('/rhyme-history', async (req, res) => {
     const startAfter = req.query.startAfter;
     const sortBy = req.query.sort || 'newest'; 
 
-    console.log('Request params:', { limit, startAfter, sortBy });
 
     let query = db.collection('rhymeAnalysis');
     
