@@ -86,6 +86,7 @@ export const useRhymeHistory = () => {
     if (newSort !== sortBy) {
       setSortBy(newSort);
       setNextPageToken(null);
+      setHistory([]); 
       await fetchHistory(undefined, newSort);
     }
   };

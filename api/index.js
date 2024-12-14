@@ -133,9 +133,10 @@ app.get('/rhyme-history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const startAfter = req.query.startAfter;
-    const sortBy = req.query.sort || 'newest'; // デフォルトは最新順
+    const sortBy = req.query.sort || 'newest'; 
 
-    // ソート条件の設定
+    console.log('Request params:', { limit, startAfter, sortBy });
+
     let query = db.collection('rhymeAnalysis');
     
     switch (sortBy) {
@@ -144,7 +145,7 @@ app.get('/rhyme-history', async (req, res) => {
         break;
       case 'likes':
         query = query.orderBy('likeCount', 'desc')
-                    .orderBy('createdAt', 'desc'); // 同じいいね数の場合は新しい順
+                    .orderBy('createdAt', 'desc'); 
         break;
       case 'newest':
       default:
@@ -154,10 +155,11 @@ app.get('/rhyme-history', async (req, res) => {
 
     query = query.limit(limit);
 
-    // startAfterの処理
     if (startAfter) {
       const startAfterDoc = await db.collection('rhymeAnalysis').doc(startAfter).get();
+      console.log('StartAfter document exists:', startAfterDoc.exists);
       if (startAfterDoc.exists) {
+        const startAfterData = startAfterDoc.data();
         query = query.startAfter(startAfterDoc);
       }
     }
@@ -180,14 +182,16 @@ app.get('/rhyme-history', async (req, res) => {
 
     const lastDoc = snapshot.docs[snapshot.docs.length - 1];
     
+
     res.json({
       items: history,
       nextPageToken: lastDoc ? lastDoc.id : null,
       hasMore: history.length === limit,
-      sortBy // 現在のソート順も返す
+      sortBy
     });
   } catch (error) {
     console.error('Firestore Error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       error: '履歴の取得に失敗しました'
     });
