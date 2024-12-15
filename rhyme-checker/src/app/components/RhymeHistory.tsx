@@ -69,7 +69,7 @@ export const RhymeHistory: React.FC = () => {
                   {new Date(item.createdAt).toLocaleString()}
                 </div>
               </div>
-              <p className="text-gray-700">{item.text}</p>
+              <p className="text-lg text-gray-800">{item.text}</p>
               <div className="flex items-center justify-between">
                 <div className="flex space-x-4">
                   <div>韻スコア: {item.analysis.rhymeScore}</div>

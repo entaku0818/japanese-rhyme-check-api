@@ -77,8 +77,8 @@ const RhymeChecker: React.FC = () => {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold">韻判定チェッカーへようこそ</h2>
-              <p className="text-gray-600">韻の分析を始めるにはログインしてください</p>
+              <h2 className="text-2xl font-bold">韻を踏んだらいい韻じゃない？</h2>
+              <p className="text-gray-600">"韻"は使えるんだろう？<br/>ログインして、ちょっと"韻"を見せてもらおうか...</p>
             </div>
             <button
               onClick={handleLogin}
@@ -97,7 +97,7 @@ const RhymeChecker: React.FC = () => {
     <div className="max-w-2xl mx-auto p-4 space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>韻判定チェッカー</CardTitle>
+          <CardTitle>韻を踏んだらいい韻じゃない？</CardTitle>
         </CardHeader>
         {!result && (
           <CardContent className="space-y-4">
@@ -105,7 +105,7 @@ const RhymeChecker: React.FC = () => {
               value={text}
               onChange={(e) => setText(e.target.value)}
               className="w-full h-32 p-2 border rounded-md"
-              placeholder="テキストを入力してください..."
+              placeholder='"韻"は使えるんだろう？ ちょっと"韻"を見せてもらおうか...'
             />
             <button
               onClick={checkRhyme}

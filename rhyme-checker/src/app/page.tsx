@@ -8,7 +8,7 @@ import { RhymeHistory } from './components/RhymeHistory';
 
 export default function Home() {
   const { user } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen] = useState(false);
 
   return (
     <div className="grid grid-rows-[auto_1fr_20px] min-h-screen p-4 pb-20 gap-8 sm:p-8 font-[family-name:var(--font-geist-sans)]">
@@ -16,7 +16,7 @@ export default function Home() {
       <header className="flex justify-end w-full px-4 sm:px-6">
         <div className="relative">
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={() => {}}
             className="flex items-center space-x-2 focus:outline-none"
           >
             {user?.photoURL ? (
