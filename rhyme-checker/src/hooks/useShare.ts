@@ -24,7 +24,7 @@ export const useShare = ({ id, text }: ShareProps) => {
 
     try {
       // シェアするテキストを作成
-      const shareText = `韻判定チェッカーで分析してみた！\n${text}\n`;
+      const shareText = `\n${text}\n`;
       const fullShareText = `${shareText}${shareUrl}`;
 
       await navigator.clipboard.writeText(fullShareText);
@@ -45,7 +45,7 @@ export const useShare = ({ id, text }: ShareProps) => {
   const handleTwitterShare = async (): Promise<void> => {
     if (!shareUrl) return;
 
-    const shareText = `韻判定チェッカーで分析してみた！\n${text}\n`;
+    const shareText = `韻を踏んだらいい韻んじゃない？\n${text}\n`;
     const twitterUrl = new URL('https://twitter.com/intent/tweet');
     twitterUrl.searchParams.set('text', shareText);
     twitterUrl.searchParams.set('url', shareUrl);
