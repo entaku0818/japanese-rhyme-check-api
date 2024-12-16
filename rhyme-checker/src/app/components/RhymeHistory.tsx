@@ -1,7 +1,7 @@
 "use client"
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Loader2, Heart, User, Clock, ThumbsUp } from 'lucide-react';
+import { Loader2, Heart, User} from 'lucide-react';
 import { SORT_OPTIONS, SortOption, useRhymeHistory } from '@/hooks/useRhymeHistory';
 import { cn } from '@/lib/utils';
 
