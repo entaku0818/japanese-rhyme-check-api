@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
       throw new Error('ID is required')
     }
 
-    // APIからデータを取得
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/rhyme-analysis/${id}`,
       { next: { revalidate: 60 } } 
@@ -48,8 +47,6 @@ export async function GET(request: NextRequest) {
             color: 'white',
           }}
         >
-
-          {/* スコア表示 */}
           <div
             style={{
               display: 'flex',
@@ -84,16 +81,16 @@ export async function GET(request: NextRequest) {
                 width: '45%',
               }}
             >
-              <div style={{ fontSize: '24px', color: '#888' }}>フロウの評価</div>
+              <div style={{ fontSize: '24px', color: '#888' }}>フローの評価</div>
               <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#2196F3' }}>
                 {data.analysis.flowScore.toFixed(1)}
               </div>
             </div>
           </div>
 
-          {/* テキスト表示 */}
           <div
             style={{
+              display: 'flex',
               fontSize: '32px',
               lineHeight: '1.4',
               margin: '20px 0',
@@ -104,33 +101,24 @@ export async function GET(request: NextRequest) {
               wordBreak: 'break-all',
             }}
           >
-            {data.text}
+            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+              {data.text}
+            </div>
           </div>
 
-          {/* フッター */}
           <div
             style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
               fontSize: '20px',
               color: '#888',
-              textAlign: 'right',
               marginTop: '20px',
               paddingRight: '20px'
             }}
           >
-            <a 
-              href="https://rhyme-check.vercel.app/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                textDecoration: 'none',
-                color: 'inherit',
-                transition: 'color 0.2s ease',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.color = '#666'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#888'}
-            >
+            <div style={{ color: 'white' }}>
               韻を踏んだらいい韻じゃない？
-            </a>
+            </div>
           </div>
         </div>
       ),
