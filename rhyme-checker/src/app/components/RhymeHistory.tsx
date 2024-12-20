@@ -1,7 +1,7 @@
 "use client"
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Loader2, Heart, User} from 'lucide-react';
+import { Loader2, Heart, User } from 'lucide-react';
 import { SORT_OPTIONS, SortOption, useRhymeHistory } from '@/hooks/useRhymeHistory';
 import { cn } from '@/lib/utils';
 
@@ -18,26 +18,26 @@ export const RhymeHistory: React.FC = () => {
   } = useRhymeHistory();
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-4">
-      <Card>
+    <div className="mx-auto p-2 sm:p-4 space-y-4 w-full max-w-full sm:max-w-2xl">
+      <Card className="w-full">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>分析履歴</CardTitle>
-            <div className="flex gap-2">
-            {Object.entries(SORT_OPTIONS).map(([value, label]) => (
-              <button
-                key={value}
-                onClick={() => changeSort(value as SortOption)}
-                className={cn(
-                  "flex items-center gap-1 px-3 py-1.5 rounded text-sm transition-colors",
-                  sortBy === value
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                )}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <CardTitle className="text-base sm:text-lg">分析履歴</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(SORT_OPTIONS).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => changeSort(value as SortOption)}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors",
+                    sortBy === value
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
         </CardHeader>
@@ -47,31 +47,36 @@ export const RhymeHistory: React.FC = () => {
           )}
           
           {history.map((item) => (
-            <div key={item.id} className="border rounded-lg p-4 space-y-2">
-              <div className="flex items-center space-x-2">
+            <div 
+              key={item.id} 
+              className="border rounded-lg p-3 sm:p-4 space-y-2 text-sm sm:text-base"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 {item.userPhotoURL ? (
                   <img 
                     src={item.userPhotoURL}
                     alt={item.userName}
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = '/default-avatar.png';
                     }}
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                     <User className="w-4 h-4 text-gray-500" />
                   </div>
                 )}
-                <div className="font-medium">{item.userName}</div>
-                <div className="text-sm text-gray-500">
+                <div className="font-medium break-words">{item.userName}</div>
+                <div className="text-gray-500 text-xs sm:text-sm break-words">
                   {new Date(item.createdAt).toLocaleString()}
                 </div>
               </div>
-              <p className="text-lg text-gray-800">{item.text}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex space-x-4">
+              <p className="text-gray-800 text-base sm:text-lg break-words">
+                {item.text}
+              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex space-x-4 text-sm sm:text-base">
                   <div>韻スコア: {item.analysis.rhymeScore}</div>
                   <div>フロースコア: {item.analysis.flowScore}</div>
                 </div>
@@ -102,7 +107,7 @@ export const RhymeHistory: React.FC = () => {
           {hasMore && !loading && (
             <button
               onClick={loadMore}
-              className="w-full p-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+              className="w-full p-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm sm:text-base"
             >
               もっと見る
             </button>

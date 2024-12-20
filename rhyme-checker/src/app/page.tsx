@@ -62,11 +62,10 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="w-full px-4 sm:px-6 space-y-8">
+      <main className="w-full max-w-2xl mx-auto sm:px-6 space-y-8">
         <RhymeChecker />
         <RhymeHistory />
       </main>
-
       {/* Footer */}
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
       </footer>
